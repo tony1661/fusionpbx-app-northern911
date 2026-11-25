@@ -47,7 +47,8 @@ if (!function_exists('e911_db')) {
 		return [
 			'northern911_address_number', 'northern911_address_name', 'northern911_address_street_number', 'northern911_address_unit',
 			'northern911_address_street_name', 'northern911_address_city', 'northern911_address_province', 'northern911_address_postal_code',
-			'northern911_address_location_info', 'northern911_address_enabled', 'northern911_address_description',
+			'northern911_address_location_info', 'northern911_address_enabled', 'northern911_address_extension_required',
+			'northern911_address_description',
 		];
 	}
 
@@ -467,6 +468,7 @@ if (!function_exists('e911_db')) {
 				$uuid = $row['northern911_address_uuid'];
 				$row['number'] = self::normalize($row['northern911_address_number']);
 				$row['enabled'] = ($row['northern911_address_enabled'] !== 'false');
+				$row['extension_required'] = ($row['northern911_address_extension_required'] !== 'false');
 				$this->records[$uuid] = $row;
 				$this->record_usage[$uuid] = [];
 				$this->record_issues[$uuid] = [];
@@ -489,7 +491,7 @@ if (!function_exists('e911_db')) {
 				}
 				if ($in_scope) {
 					$this->summary[$domain['domain_uuid']] = [
-						'records' => 0, 'records_used' => 0, 'extensions' => 0, 'extensions_ok' => 0,
+						'records' => 0, 'records_used' => 0, 'records_no_ext' => 0, 'extensions' => 0, 'extensions_ok' => 0,
 						'exempt' => 0, 'error' => 0, 'warning' => 0, 'notice' => 0, 'status' => 'ok',
 						'enabled' => $enabled,
 					];
@@ -621,7 +623,10 @@ if (!function_exists('e911_db')) {
 				if ($postal) {
 					$this->add_issue($domain_uuid, $postal[0], 'rec_postal', 'record', $uuid, $label, $number, $label.': '.$postal[1]);
 				}
-				if (empty($this->record_usage[$uuid])) {
+				if (empty($this->record_usage[$uuid]) && !$row['extension_required']) {
+					$this->summary[$domain_uuid]['records_no_ext']++;
+				}
+				elseif (empty($this->record_usage[$uuid])) {
 					$this->add_issue($domain_uuid, 'warning', 'rec_unused', 'record', $uuid, $label, $number, $label.' has an E911 address but no extension uses it as its emergency number');
 				}
 				else {

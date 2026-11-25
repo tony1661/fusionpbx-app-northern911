@@ -47,6 +47,7 @@ There is no API integration with Northern 911. Everything goes through file uplo
 - Required address fields: everything except unit, location_info (911 instructions), description (internal notes).
 - Phone numbers: normalized 10-digit NANP (`e911_audit::normalize` / `valid_number`). Postal codes are validated for Canadian provinces (`$canada` list), and a missing space is a notice.
 - Exempt extensions: description contains the `exempt_tag` setting (default `no911`).
+- Addresses with `northern911_address_extension_required = 'false'` skip the `rec_unused` warning and are counted in `summary['records_no_ext']` (separate from `records_used`). NULL/missing means required, so old rows and imports keep the old behaviour.
 - Severity ranking: ok/exempt/disabled < notice < warning < error.
 - Without `account_id` set, every page shows a red banner and export is blocked.
 
@@ -60,6 +61,7 @@ No test suite and no local runtime in the repo. Changes are verified on a Fusion
 - Added handling for disabled domains (audit flags + excluded from export).
 - README documents manual menu-item creation because Menu Defaults resets custom menus.
 - The exempt tag was only documented in README and the setting description, so users couldn't find it. Added a hint under the Extensions section of the E911 page (`description-exempt_hint`, shows the live tag via `e911_audit::$exempt_tag`).
+- Added per-address "Extension Required" field (new column, needs Upgrade > Schema) for numbers like main lines/alarm panels that need a 911 address but no extension points at them.
 
 ## Keeping this file current (instruction to AI sessions)
 

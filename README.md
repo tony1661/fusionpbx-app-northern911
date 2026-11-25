@@ -77,7 +77,7 @@ Errors
 - Address belongs to a disabled domain but was exported before, so Northern 911 probably still has it. Remove it there, then delete or disable it here.
 
 Warnings
-- Address exists but no extension uses that number
+- Address exists but no extension uses that number (unless the address has Extension Required set to False)
 - Number is not an inbound destination in the domain (only checked when the domain has inbound destinations)
 - Address belongs to a disabled domain and was never exported. Delete or disable it.
 
@@ -86,7 +86,9 @@ Notices
 - Postal code has no space (K6J5T8 instead of K6J 5T8)
 - Address is disabled
 
-To leave an extension out of the audit (fax, paging, door phones), put `no911` in its description. The tag can be changed under Default Settings, category `northern911`, subcategory `exempt_tag`.
+To leave an extension out of the audit (fax, paging, door phones), put `no911` in its description. The tag can be changed under Default Settings, category `northern911`, subcategory `exempt_tag`. The E911 page shows this hint under Extensions.
+
+Some numbers need a 911 address even though no extension uses them as its emergency number, such as a main line, an analog fax line or an alarm panel. Edit the address and set Extension Required to False. It is still checked and exported, but it is not flagged as unused, and it counts as "No extension needed" in the Addresses chart.
 
 ## Export
 

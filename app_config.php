@@ -74,6 +74,7 @@
 			'northern911_address_postal_code' => 'Postal or ZIP code',
 			'northern911_address_location_info' => 'Instructions for the 911 operator',
 			'northern911_address_enabled' => 'true or false',
+			'northern911_address_extension_required' => 'true or false, false means no extension has to use this number',
 			'northern911_address_description' => 'Internal notes, not exported',
 		] as $northern911_field => $northern911_description) {
 			$z++;

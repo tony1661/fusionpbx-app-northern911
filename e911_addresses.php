@@ -122,7 +122,7 @@
 	$totals = [
 		'domains' => 0, 'compliant' => 0, 'review' => 0, 'not_compliant' => 0, 'disabled' => 0,
 		'extensions' => 0, 'extensions_ok' => 0, 'exempt' => 0,
-		'records' => 0, 'records_used' => 0, 'unused' => 0, 'pending' => 0,
+		'records' => 0, 'records_used' => 0, 'records_no_ext' => 0, 'unused' => 0, 'pending' => 0,
 		'error' => 0, 'warning' => 0, 'notice' => 0,
 	];
 	foreach ($audit->summary as $counts) {
@@ -144,7 +144,7 @@
 		else {
 			$totals['review']++;
 		}
-		foreach (['extensions', 'extensions_ok', 'exempt', 'records', 'records_used', 'error', 'warning', 'notice'] as $key) {
+		foreach (['extensions', 'extensions_ok', 'exempt', 'records', 'records_used', 'records_no_ext', 'error', 'warning', 'notice'] as $key) {
 			$totals[$key] += $counts[$key];
 		}
 	}
@@ -173,7 +173,7 @@
 				case 'dom_name': $result = strnatcasecmp($audit->domain_name($a), $audit->domain_name($b)); break;
 				case 'dom_status': $result = $status_order[$sa['status']] - $status_order[$sb['status']]; break;
 				case 'dom_extensions': $result = ($sa['extensions'] - $sa['extensions_ok']) - ($sb['extensions'] - $sb['extensions_ok']); break;
-				case 'dom_records': $result = ($sa['records'] - $sa['records_used']) - ($sb['records'] - $sb['records_used']); break;
+				case 'dom_records': $result = ($sa['records'] - $sa['records_used'] - $sa['records_no_ext']) - ($sb['records'] - $sb['records_used'] - $sb['records_no_ext']); break;
 				case 'dom_error': case 'dom_warning': case 'dom_notice': case 'dom_exempt':
 					$key = substr($order_by, 4);
 					$result = $sa[$key] - $sb[$key];
@@ -367,11 +367,12 @@
 	$widgets[] = [
 		'id' => 'e911_chart_addresses',
 		'title' => $text['label-widget_addresses'],
-		'center' => $totals['records_used'].' / '.$totals['records'],
-		'data' => [$totals['records_used'], $totals['records'] - $totals['records_used']],
-		'colors' => [$colors['ok'], $colors['warning']],
+		'center' => ($totals['records_used'] + $totals['records_no_ext']).' / '.$totals['records'],
+		'data' => [$totals['records_used'], $totals['records_no_ext'], $totals['records'] - $totals['records_used'] - $totals['records_no_ext']],
+		'colors' => [$colors['ok'], $colors['exempt'], $colors['warning']],
 		'legend' => [
 			['ok', $totals['records_used'], $text['label-addr_used']],
+			['exempt', $totals['records_no_ext'], $text['label-addr_no_ext']],
 			['warning', $totals['unused'], $text['label-addr_unused']],
 			['notice', $totals['pending'], $text['label-addr_pending']],
 		],
@@ -418,7 +419,7 @@
 			echo "	<td>".($url ? "<a href='".escape($url)."'>".escape($audit->domain_name($uuid))."</a>" : escape($audit->domain_name($uuid)))."</td>\n";
 			echo "	<td>".e911_audit::status_badge($counts['status'])."</td>\n";
 			echo "	<td class='center'>".$counts['extensions_ok']." / ".$counts['extensions']."</td>\n";
-			echo "	<td class='center'>".$counts['records_used']." / ".$counts['records']."</td>\n";
+			echo "	<td class='center'>".($counts['records_used'] + $counts['records_no_ext'])." / ".$counts['records']."</td>\n";
 			echo "	<td class='center'>".$count_cell($counts['error'], 'e911-error')."</td>\n";
 			echo "	<td class='center'>".$count_cell($counts['warning'], 'e911-warning')."</td>\n";
 			echo "	<td class='center hide-sm-dn'>".$count_cell($counts['notice'], 'e911-notice')."</td>\n";
@@ -487,7 +488,7 @@
 		echo "	<td>".escape($row['northern911_address_name'])."</td>\n";
 		echo "	<td class='e911-col-address'>".escape($row['address'])."</td>\n";
 		echo "	<td class='description overflow hide-md-dn'>".escape($row['northern911_address_location_info'])."</td>\n";
-		echo "	<td class='hide-sm-dn'>".(empty($row['used_by']) ? "<span class='e911-muted'>".escape($text['label-none'])."</span>" : escape(implode(', ', $row['used_by'])))."</td>\n";
+		echo "	<td class='hide-sm-dn'>".(empty($row['used_by']) ? "<span class='e911-muted'>".escape($row['extension_required'] ? $text['label-none'] : $text['label-addr_no_ext'])."</span>" : escape(implode(', ', $row['used_by'])))."</td>\n";
 		$enabled_label = $row['enabled'] ? $text['label-true'] : $text['label-false'];
 		if ($can_edit) {
 			echo "	<td class='no-link center'>";

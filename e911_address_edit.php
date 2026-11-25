@@ -45,6 +45,7 @@
 		$row = [
 			'northern911_address_number' => e911_audit::normalize($_GET['number'] ?? ''),
 			'northern911_address_enabled' => 'true',
+			'northern911_address_extension_required' => 'true',
 		];
 	}
 
@@ -70,6 +71,7 @@
 		$data['northern911_address_province'] = strtoupper($data['northern911_address_province']);
 		$data['northern911_address_postal_code'] = strtoupper($data['northern911_address_postal_code']);
 		$data['northern911_address_enabled'] = ($_POST['northern911_address_enabled'] ?? '') === 'true' ? 'true' : 'false';
+		$data['northern911_address_extension_required'] = ($_POST['northern911_address_extension_required'] ?? '') === 'false' ? 'false' : 'true';
 
 		if (!e911_audit::valid_number($data['northern911_address_number'])) {
 			$errors[] = 'Enter a valid 10 digit phone number.';
@@ -202,12 +204,23 @@
 	echo "	</td>\n";
 	echo "</tr>\n";
 
+	echo "<tr>\n";
+	echo "	<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>Extension Required</td>\n";
+	echo "	<td class='vtable' align='left'>\n";
+	echo "		<select class='formfld' name='northern911_address_extension_required'>\n";
+	echo "			<option value='true'".(($row['northern911_address_extension_required'] ?? 'true') !== 'false' ? " selected='selected'" : '').">True</option>\n";
+	echo "			<option value='false'".(($row['northern911_address_extension_required'] ?? '') === 'false' ? " selected='selected'" : '').">False</option>\n";
+	echo "		</select>\n";
+	echo "		<br>Set to False for numbers that no extension uses as its emergency number, such as a main line, fax line or alarm panel. The address is still audited and exported, but is not flagged as unused.\n";
+	echo "	</td>\n";
+	echo "</tr>\n";
+
 	$input('Internal Notes', 'northern911_address_description', 'Not sent to the carrier.');
 
 	if ($uuid) {
 		echo "<tr>\n";
 		echo "	<td class='vncell' valign='top' align='left' nowrap='nowrap'>Used By</td>\n";
-		echo "	<td class='vtable' align='left'>".(empty($using) ? e911_badge('warning', 'No extensions') : escape(implode(', ', $using)))."</td>\n";
+		echo "	<td class='vtable' align='left'>".(empty($using) ? (($row['northern911_address_extension_required'] ?? '') === 'false' ? "<span class='e911-muted'>No extensions (not required)</span>" : e911_badge('warning', 'No extensions')) : escape(implode(', ', $using)))."</td>\n";
 		echo "</tr>\n";
 		echo "<tr>\n";
 		echo "	<td class='vncell' valign='top' align='left' nowrap='nowrap'>Last Export</td>\n";

@@ -46,6 +46,7 @@ $text['label-ext_ok']['en-us'] = "OK";
 $text['label-ext_failing']['en-us'] = "Failing";
 $text['label-addr_used']['en-us'] = "In use";
 $text['label-addr_unused']['en-us'] = "Not used";
+$text['label-addr_no_ext']['en-us'] = "No extension needed";
 $text['label-addr_pending']['en-us'] = "Waiting for export";
 $text['label-extensions_compliant']['en-us'] = "extensions compliant";
 $text['label-addresses_in_use']['en-us'] = "addresses in use";
