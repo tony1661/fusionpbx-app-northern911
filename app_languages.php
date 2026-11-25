@@ -6,7 +6,7 @@ $text['title_description-e911']['en-us'] = "The Northern 911 address for each em
 $text['title_description-e911_all']['en-us'] = "Every domain. Click a domain, address or extension to switch to that domain and open it.";
 $text['title-e911_addresses']['en-us'] = "E911 Addresses";
 $text['title-e911_export']['en-us'] = "E911 Export";
-$text['title_description-e911_export']['en-us'] = "Download the file you upload to Northern 911, in the carrier's 13 column layout with no header row. Disabled addresses are never exported.";
+$text['title_description-e911_export']['en-us'] = "Download the file you upload to Northern 911, in the carrier's 13 column layout with no header row. Disabled addresses and addresses in disabled domains are never exported.";
 $text['title-extensions']['en-us'] = "Extensions";
 $text['title-issues']['en-us'] = "Issues";
 $text['title-domains']['en-us'] = "Domains";
@@ -38,6 +38,7 @@ $text['label-compliant']['en-us'] = "Compliant";
 $text['label-not_compliant']['en-us'] = "Not compliant";
 $text['label-needs_review']['en-us'] = "Needs review";
 $text['label-no_extensions']['en-us'] = "No extensions";
+$text['label-domain_disabled']['en-us'] = "Disabled";
 $text['label-widget_domains']['en-us'] = "Domains";
 $text['label-widget_extensions']['en-us'] = "Extensions";
 $text['label-widget_addresses']['en-us'] = "Addresses";
@@ -62,6 +63,6 @@ $text['message-all_compliant']['en-us'] = "Every domain is compliant.";
 $text['message-nothing_to_show']['en-us'] = "Nothing to show.";
 $text['message-e911_deleted']['en-us'] = "Deleted. Remove the number from the Northern 911 database too.";
 $text['message-e911_toggled']['en-us'] = "Updated. Export to the carrier to make the change live.";
-$text['message-left_out']['en-us'] = "These addresses are incomplete and will be left out until they are fixed:";
+$text['message-left_out']['en-us'] = "These addresses will be left out:";
 
 ?>

@@ -204,7 +204,7 @@ if (!function_exists('e911_db')) {
 			echo "			<div class='hud_chart'><canvas id='".escape($widget['id'])."'></canvas></div>\n";
 			echo "			<div class='e911-legend'>";
 			foreach ($widget['legend'] as $item) {
-				echo "<span><span class='e911-".escape($item[0])."'><b>".(int)$item[1]."</b></span> ".escape($item[2])."</span>";
+				echo "<span><span class='e911-".escape($item[0])."'><b>".(int)$item[1]."</b></span> ".escape($item[2])."</span> ";
 			}
 			echo "</div>\n";
 			echo "		</div>\n";
@@ -343,6 +343,7 @@ if (!function_exists('e911_db')) {
 		echo ".e911-summary { margin: 0 0 5px 0; }\n";
 		echo ".e911-summary > span { margin-right: 18px; white-space: nowrap; }\n";
 		echo ".e911-widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 15px; margin: 0 0 10px 0; }\n";
+		echo ".e911-widgets div.hud_box, .e911-widgets div.hud_content { height: auto; }\n";
 		echo ".e911-widgets div.hud_chart { height: 150px; padding-top: 7px; }\n";
 		echo ".e911-widgets .e911-legend { padding: 8px 10px 12px 10px; font-size: 12px; line-height: 1.7; }\n";
 		echo ".e911-widgets .e911-legend span { margin: 0 6px; white-space: nowrap; }\n";
@@ -454,23 +455,12 @@ if (!function_exists('e911_db')) {
 		public function run($only_domain_uuid = null) {
 			$exempt_tag = strtolower(trim((string)e911_setting('exempt_tag', 'no911')));
 
-			//domains in scope
-			foreach (e911_domains() as $domain) {
-				$this->domains[$domain['domain_uuid']] = $domain;
-				$in_scope = $only_domain_uuid ? ($domain['domain_uuid'] == $only_domain_uuid) : ($domain['domain_enabled'] === 'true');
-				if ($in_scope) {
-					$this->summary[$domain['domain_uuid']] = [
-						'records' => 0, 'records_used' => 0, 'extensions' => 0, 'extensions_ok' => 0,
-						'exempt' => 0, 'error' => 0, 'warning' => 0, 'notice' => 0, 'status' => 'ok',
-					];
-				}
-			}
-
 			//every record, so numbers registered in another domain can be found
 			$sql = "select *, cast(northern911_address_exported as text) as exported_text from v_northern911_addresses ";
 			$sql .= "order by northern911_address_name asc, northern911_address_number asc";
 			$by_number = [];
 			$by_domain_number = [];
+			$domains_with_records = [];
 			foreach (e911_select($sql) as $row) {
 				$uuid = $row['northern911_address_uuid'];
 				$row['number'] = self::normalize($row['northern911_address_number']);
@@ -478,9 +468,29 @@ if (!function_exists('e911_db')) {
 				$this->records[$uuid] = $row;
 				$this->record_usage[$uuid] = [];
 				$this->record_issues[$uuid] = [];
+				$domains_with_records[$row['domain_uuid']] = true;
 				if ($row['enabled']) {
 					$by_number[$row['number']][] = $uuid;
 					$by_domain_number[$row['domain_uuid']][$row['number']][] = $uuid;
+				}
+			}
+
+			//domains in scope: every enabled domain, plus disabled domains that still have E911 addresses
+			foreach (e911_domains() as $domain) {
+				$this->domains[$domain['domain_uuid']] = $domain;
+				$enabled = ($domain['domain_enabled'] === 'true');
+				if ($only_domain_uuid) {
+					$in_scope = ($domain['domain_uuid'] == $only_domain_uuid);
+				}
+				else {
+					$in_scope = $enabled || isset($domains_with_records[$domain['domain_uuid']]);
+				}
+				if ($in_scope) {
+					$this->summary[$domain['domain_uuid']] = [
+						'records' => 0, 'records_used' => 0, 'extensions' => 0, 'extensions_ok' => 0,
+						'exempt' => 0, 'error' => 0, 'warning' => 0, 'notice' => 0, 'status' => 'ok',
+						'enabled' => $enabled,
+					];
 				}
 			}
 
@@ -513,7 +523,7 @@ if (!function_exists('e911_db')) {
 
 			foreach ($extensions as $ext) {
 				$domain_uuid = $ext['domain_uuid'];
-				if (!isset($this->summary[$domain_uuid])) {
+				if (!isset($this->summary[$domain_uuid]) || !$this->summary[$domain_uuid]['enabled']) {
 					continue;
 				}
 				$uuid = $ext['extension_uuid'];
@@ -577,6 +587,19 @@ if (!function_exists('e911_db')) {
 					$this->add_issue($domain_uuid, 'notice', 'rec_disabled', 'record', $uuid, $label, $number, $label.' is disabled and is not counted or exported');
 					continue;
 				}
+				//the domain is disabled: never exported, and the carrier may still hold the address
+				if (!$this->summary[$domain_uuid]['enabled']) {
+					$domain_label = $this->domain_name($domain_uuid);
+					if (!empty($row['exported_text'])) {
+						$message = $label.' belongs to disabled domain '.$domain_label.' but was exported to the carrier. Remove it from Northern 911, then delete or disable it here';
+						$this->add_issue($domain_uuid, 'error', 'rec_domain_disabled', 'record', $uuid, $label, $number, $message);
+					}
+					else {
+						$message = $label.' belongs to disabled domain '.$domain_label.' and will not be exported. Delete or disable it';
+						$this->add_issue($domain_uuid, 'warning', 'rec_domain_disabled', 'record', $uuid, $label, $number, $message);
+					}
+					continue;
+				}
 				if (!self::valid_number($number)) {
 					$this->add_issue($domain_uuid, 'error', 'rec_invalid', 'record', $uuid, $label, $number, $label.' is not a valid 10 digit number');
 				}
@@ -616,7 +639,10 @@ if (!function_exists('e911_db')) {
 
 			//domain status
 			foreach ($this->summary as $domain_uuid => $counts) {
-				if ($counts['error'] > 0) {
+				if (!$counts['enabled']) {
+					$status = 'disabled';
+				}
+				elseif ($counts['error'] > 0) {
 					$status = 'error';
 				}
 				elseif ($counts['warning'] > 0) {
@@ -648,6 +674,7 @@ if (!function_exists('e911_db')) {
 				'warning' => ['warning', 'Needs review'],
 				'ok' => ['ok', 'Compliant'],
 				'empty' => ['exempt', 'No extensions'],
+				'disabled' => ['disabled', 'Domain disabled'],
 			];
 			$item = $map[$status] ?? ['notice', $status];
 			return e911_badge($item[0], $item[1]);

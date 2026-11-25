@@ -18,9 +18,9 @@
 //add multi-lingual support
 	$text = e911_text();
 
-//load the records for an export, incomplete records are always left out
+//load the records for an export, addresses in disabled domains and incomplete addresses are always left out
 	function e911_export_rows($domain_uuid, $scope, &$left_out) {
-		$sql = "select a.*, cast(a.northern911_address_exported as text) as exported_text, d.domain_name ";
+		$sql = "select a.*, cast(a.northern911_address_exported as text) as exported_text, d.domain_name, cast(d.domain_enabled as text) as domain_enabled ";
 		$sql .= "from v_northern911_addresses as a join v_domains as d on d.domain_uuid = a.domain_uuid ";
 		$sql .= "where coalesce(a.northern911_address_enabled, 'true') <> 'false' ";
 		$parameters = null;
@@ -39,6 +39,10 @@
 				continue;
 			}
 			$number = e911_audit::normalize($row['northern911_address_number']);
+			if ($row['domain_enabled'] !== 'true') {
+				$left_out[] = e911_format_number($number).' ('.$row['domain_name'].'): domain is disabled';
+				continue;
+			}
 			$missing = e911_audit::missing_fields($row);
 			if (!e911_audit::valid_number($number)) {
 				$missing[] = 'valid phone number';
@@ -137,7 +141,7 @@
 		echo "			<option value=''>".escape($text['label-all_domains'])."</option>\n";
 		foreach (e911_domains() as $domain) {
 			$selected = ($domain['domain_uuid'] == $domain_uuid) ? " selected='selected'" : '';
-			echo "			<option value='".escape($domain['domain_uuid'])."'".$selected.">".escape($domain['domain_name'])."</option>\n";
+			echo "			<option value='".escape($domain['domain_uuid'])."'".$selected.">".escape($domain['domain_name'].($domain['domain_enabled'] === 'true' ? '' : ' (disabled)'))."</option>\n";
 		}
 		echo "		</select>\n";
 		echo "	</td>\n";

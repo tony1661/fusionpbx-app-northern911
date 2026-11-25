@@ -64,6 +64,8 @@ Every address field is required except Unit / Suite, 911 Instructions and Intern
 
 Only enabled extensions in enabled domains are checked, using the Emergency Caller ID Number on each extension.
 
+Disabled domains that still have E911 addresses are checked too. Their extensions are skipped, and each of their addresses is flagged because it is never exported and may still be registered with Northern 911. These domains show as Disabled in Show All.
+
 Errors
 - Extension has no emergency caller ID number
 - Extension emergency number is not a valid 10 digit number
@@ -72,10 +74,12 @@ Errors
 - Same number has more than one address
 - Address is missing a required field (name, street number, street name, city, province, postal code)
 - Postal code is not valid
+- Address belongs to a disabled domain but was exported before, so Northern 911 probably still has it. Remove it there, then delete or disable it here.
 
 Warnings
 - Address exists but no extension uses that number
 - Number is not an inbound destination in the domain (only checked when the domain has inbound destinations)
+- Address belongs to a disabled domain and was never exported. Delete or disable it.
 
 Notices
 - Address has never been exported, or changed after the last export
@@ -86,7 +90,7 @@ To leave an extension out of the audit (fax, paging, door phones), put `no911` i
 
 ## Export
 
-E911 > Export writes the Northern 911 file: 13 columns, no header row, CRLF line endings. By default it exports every address in every domain. You can pick one domain, or only the addresses that are new or changed since the last export. Disabled addresses are never exported, and any address with a missing field is left out and listed on the page. Exported addresses are marked as sent so the E911 page knows they have been uploaded.
+E911 > Export writes the Northern 911 file: 13 columns, no header row, CRLF line endings. By default it exports every address in every domain. You can pick one domain, or only the addresses that are new or changed since the last export. Disabled addresses and addresses in disabled domains are never exported. Those, and any address with a missing field, are left out and listed on the page. Exported addresses are marked as sent so the E911 page knows they have been uploaded.
 
 Columns in the export:
 

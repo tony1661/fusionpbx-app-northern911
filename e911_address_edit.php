@@ -160,7 +160,7 @@
 		echo "		<select class='formfld' name='domain_uuid'>\n";
 		foreach (e911_domains() as $domain) {
 			$selected = ($domain['domain_uuid'] == $domain_uuid) ? " selected='selected'" : '';
-			echo "			<option value='".escape($domain['domain_uuid'])."'".$selected.">".escape($domain['domain_name'])."</option>\n";
+			echo "			<option value='".escape($domain['domain_uuid'])."'".$selected.">".escape($domain['domain_name'].($domain['domain_enabled'] === 'true' ? '' : ' (disabled)'))."</option>\n";
 		}
 		echo "		</select>\n";
 		echo "	</td>\n";

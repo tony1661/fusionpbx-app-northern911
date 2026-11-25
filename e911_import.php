@@ -334,7 +334,7 @@
 			echo "		<option value=''>Skip</option>\n";
 			foreach ($domains as $domain) {
 				$selected = ($domain['domain_uuid'] == $group['domain_uuid']) ? " selected='selected'" : '';
-				echo "		<option value='".escape($domain['domain_uuid'])."'".$selected.">".escape($domain['domain_name'])."</option>\n";
+				echo "		<option value='".escape($domain['domain_uuid'])."'".$selected.">".escape($domain['domain_name'].($domain['domain_enabled'] === 'true' ? '' : ' (disabled)'))."</option>\n";
 			}
 			echo "	</select></td>\n";
 			echo "	<td valign='top'>".($group['domain_uuid'] === '' ? e911_badge('warning', 'No match') : escape(implode(', ', array_keys($group['reasons']))))."</td>\n";

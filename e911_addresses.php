@@ -120,13 +120,21 @@
 
 //totals for the charts
 	$totals = [
-		'domains' => 0, 'compliant' => 0, 'review' => 0, 'not_compliant' => 0,
+		'domains' => 0, 'compliant' => 0, 'review' => 0, 'not_compliant' => 0, 'disabled' => 0,
 		'extensions' => 0, 'extensions_ok' => 0, 'exempt' => 0,
 		'records' => 0, 'records_used' => 0, 'unused' => 0, 'pending' => 0,
 		'error' => 0, 'warning' => 0, 'notice' => 0,
 	];
 	foreach ($audit->summary as $counts) {
 		$totals['domains']++;
+		//disabled domains only count in the domain and issue charts
+		if ($counts['status'] == 'disabled') {
+			$totals['disabled']++;
+			foreach (['error', 'warning', 'notice'] as $key) {
+				$totals[$key] += $counts[$key];
+			}
+			continue;
+		}
 		if ($counts['status'] == 'ok' || $counts['status'] == 'empty') {
 			$totals['compliant']++;
 		}
@@ -150,7 +158,7 @@
 	}
 
 //domains (show all only), worst first unless a column was clicked
-	$status_order = ['error' => 0, 'warning' => 1, 'ok' => 2, 'empty' => 3];
+	$status_order = ['error' => 0, 'disabled' => 1, 'warning' => 2, 'ok' => 3, 'empty' => 4];
 	$domain_uuids = [];
 	if ($show == 'all') {
 		foreach ($audit->summary as $uuid => $counts) {
@@ -334,12 +342,13 @@
 			'id' => 'e911_chart_domains',
 			'title' => $text['label-widget_domains'],
 			'center' => $totals['compliant'].' / '.$totals['domains'],
-			'data' => [$totals['compliant'], $totals['review'], $totals['not_compliant']],
-			'colors' => [$colors['ok'], $colors['warning'], $colors['error']],
+			'data' => [$totals['compliant'], $totals['review'], $totals['not_compliant'], $totals['disabled']],
+			'colors' => [$colors['ok'], $colors['warning'], $colors['error'], $colors['disabled']],
 			'legend' => [
 				['ok', $totals['compliant'], $text['label-compliant']],
 				['warning', $totals['review'], $text['label-needs_review']],
 				['error', $totals['not_compliant'], $text['label-not_compliant']],
+				['disabled', $totals['disabled'], $text['label-domain_disabled']],
 			],
 		];
 	}
