@@ -15,6 +15,29 @@ Keeps the Northern 911 address for every emergency number in each domain, audits
 
 You will find E911 under Applications.
 
+### Adding the menu item manually
+
+If E911 does not show up under Applications after the upgrade, or you would rather not run Menu Defaults (it rebuilds the whole default menu and undoes any menu changes you have made), add the menu item by hand:
+
+1. Go to Advanced > Menu Manager and click the default menu to edit it.
+2. Click Add and fill in the menu item:
+
+   | Field | Value |
+   |---|---|
+   | Title | E911 |
+   | Link | `/app/northern911/e911_addresses.php` |
+   | Target | Internal |
+   | Parent Menu | Applications |
+   | Groups | superadmin and admin |
+   | Order | leave blank, or a number to place it in the list |
+   | Protected | False |
+
+3. Save, then log out and back in.
+
+The menu item only controls what appears in the menu. Access to the page still comes from the permissions, so Permission Defaults must have been run (or the `northern911_*` permissions added to the groups under Advanced > Group Manager).
+
+Leave Protected set to False. If you run Menu Defaults later, it replaces this item with the one from the app. A protected item would be kept as well, and you would end up with two.
+
 ## First run
 
 1. Set your customer number (see Customer number below).
@@ -124,7 +147,8 @@ Uninstalling removes the app and its data from FusionPBX only. It does not remov
    drop table if exists v_northern911_addresses;
    \q
    ```
-4. Log out and back in so the menu and permissions reload.
+4. If you added the menu item by hand, the SQL above does not find it. Delete it under Advanced > Menu Manager instead.
+5. Log out and back in so the menu and permissions reload.
 
 Running Menu Defaults after removing the folder also removes the menu items, but it rebuilds the whole default menu and undoes any menu changes you have made. The SQL above removes only this app's entries.
 
