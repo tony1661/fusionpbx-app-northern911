@@ -180,6 +180,68 @@ if (!function_exists('e911_db')) {
 		return $text;
 	}
 
+	//link to a page for a record in another domain: FusionPBX switches the session domain when it sees domain_change=true
+	function e911_domain_link($url, $domain_uuid) {
+		if (is_uuid($domain_uuid) && $domain_uuid != ($_SESSION['domain_uuid'] ?? '') && permission_exists('domain_select')) {
+			$url .= (strpos($url, '?') === false ? '?' : '&').'domain_uuid='.urlencode($domain_uuid).'&domain_change=true';
+		}
+		return $url;
+	}
+
+	//doughnut widgets drawn like the FusionPBX dashboard
+	//each widget: id, title, center (text in the middle), data (numbers), colors, legend ([severity class, number, label], ...)
+	function e911_widgets($widgets) {
+		$number_color = e911_theme('dashboard_number_text_color', '#2a2a2a');
+		$empty_color = e911_theme('dashboard_missed_calls_chart_sub_color', '#d4d4d4');
+
+		echo "<script src='".PROJECT_PATH."/resources/chartjs/chart.min.js'></script>\n";
+		echo "<div class='e911-widgets'>\n";
+		foreach ($widgets as $widget) {
+			echo "<div class='widget'>\n";
+			echo "	<div class='hud_box'>\n";
+			echo "		<div class='hud_content'>\n";
+			echo "			<span class='hud_title'>".escape($widget['title'])."</span>\n";
+			echo "			<div class='hud_chart'><canvas id='".escape($widget['id'])."'></canvas></div>\n";
+			echo "			<div class='e911-legend'>";
+			foreach ($widget['legend'] as $item) {
+				echo "<span><span class='e911-".escape($item[0])."'><b>".(int)$item[1]."</b></span> ".escape($item[2])."</span>";
+			}
+			echo "</div>\n";
+			echo "		</div>\n";
+			echo "	</div>\n";
+			echo "</div>\n";
+		}
+		echo "</div>\n";
+
+		echo "<script>\n";
+		echo "(function () {\n";
+		echo "	if (typeof Chart === 'undefined') { return; }\n";
+		echo "	var font = ".json_encode((string)e911_theme('dashboard_number_text_font', 'arial')).";\n";
+		echo "	var size = ".json_encode((string)e911_theme('dashboard_chart_text_size', '30px')).";\n";
+		echo "	var center_text = { id: 'e911_center', beforeDraw: function (chart, args, options) {\n";
+		echo "		var ctx = chart.ctx, area = chart.chartArea;\n";
+		echo "		ctx.save(); ctx.font = size + ' ' + font; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';\n";
+		echo "		ctx.fillStyle = ".json_encode((string)$number_color).";\n";
+		echo "		ctx.fillText(options.text, area.left + area.width / 2, area.top + area.height / 2); ctx.restore();\n";
+		echo "	} };\n";
+		foreach ($widgets as $widget) {
+			$data = array_map('intval', $widget['data']);
+			$colors = $widget['colors'];
+			if (array_sum($data) == 0) {
+				$data = [1];
+				$colors = [$empty_color];
+			}
+			echo "	new Chart(document.getElementById(".json_encode($widget['id']).").getContext('2d'), {\n";
+			echo "		type: 'doughnut',\n";
+			echo "		data: { datasets: [{ data: ".json_encode($data).", backgroundColor: ".json_encode($colors).", borderWidth: 0 }] },\n";
+			echo "		options: { responsive: true, maintainAspectRatio: false, cutout: ".json_encode((string)e911_theme('dashboard_chart_cutout', '75%')).", events: [], plugins: { legend: { display: false }, tooltip: { enabled: false }, e911_center: { text: ".json_encode((string)$widget['center'])." } } },\n";
+			echo "		plugins: [center_text]\n";
+			echo "	});\n";
+		}
+		echo "})();\n";
+		echo "</script>\n";
+	}
+
 	//standard FusionPBX link button
 	function e911_button($label, $url, $icon, $options = []) {
 		return button::create(array_merge(['type' => 'button', 'label' => $label, 'icon' => $icon, 'link' => $url], $options));

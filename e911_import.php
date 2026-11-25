@@ -252,7 +252,7 @@
 			}
 			unset($_SESSION['e911_import']);
 			message::add('Import finished: '.$added.' added, '.$updated.' updated, '.$skipped.' skipped'.($incomplete ? ', '.$incomplete.' left out because of missing fields' : '').'.', $incomplete ? 'alert' : 'positive');
-			header('Location: '.(permission_exists('northern911_dashboard_view') ? 'e911_dashboard.php' : 'e911_addresses.php'));
+			header('Location: e911_addresses.php');
 			exit;
 		}
 	}
@@ -268,7 +268,7 @@
 
 	if ($step == 'upload') {
 		echo "<form method='post' enctype='multipart/form-data'>\n";
-		$buttons = e911_button('Back', permission_exists('northern911_dashboard_view') ? 'e911_dashboard.php' : 'e911_addresses.php', 'chevron-left');
+		$buttons = e911_button('Back', 'e911_addresses.php', 'chevron-left');
 		$buttons .= button::create(['type' => 'submit', 'label' => 'Upload', 'icon' => e911_icon('upload', 'upload'), 'id' => 'btn_save', 'style' => 'margin-left: 15px;']);
 		e911_action_bar('E911 Import', $buttons);
 		e911_customer_number_banner();

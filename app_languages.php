@@ -1,11 +1,10 @@
 <?php
 
 //titles
+$text['title-e911']['en-us'] = "E911";
+$text['title_description-e911']['en-us'] = "The Northern 911 address for each emergency number in this domain, and whether every extension is covered. Use the domain selector at the top right to change domain.";
+$text['title_description-e911_all']['en-us'] = "Every domain. Click a domain, address or extension to switch to that domain and open it.";
 $text['title-e911_addresses']['en-us'] = "E911 Addresses";
-$text['title_description-e911_addresses']['en-us'] = "The 911 address registered with Northern 911 for each emergency number, and whether every extension is covered.";
-$text['title_description-e911_addresses_all']['en-us'] = "Every E911 address in every domain.";
-$text['title-e911_dashboard']['en-us'] = "E911 Dashboard";
-$text['title_description-e911_dashboard']['en-us'] = "Compliance across every enabled domain. Domains with problems are listed first.";
 $text['title-e911_export']['en-us'] = "E911 Export";
 $text['title_description-e911_export']['en-us'] = "Download the file you upload to Northern 911, in the carrier's 13 column layout with no header row. Disabled addresses are never exported.";
 $text['title-extensions']['en-us'] = "Extensions";
@@ -13,8 +12,6 @@ $text['title-issues']['en-us'] = "Issues";
 $text['title-domains']['en-us'] = "Domains";
 
 //buttons
-$text['button-dashboard']['en-us'] = "Dashboard";
-$text['button-addresses']['en-us'] = "Addresses";
 $text['button-add_address']['en-us'] = "Add Address";
 $text['button-audit_csv']['en-us'] = "Audit CSV";
 

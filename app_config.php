@@ -36,7 +36,6 @@
 			'northern911_address_edit' => ['superadmin', 'admin'],
 			'northern911_address_delete' => ['superadmin', 'admin'],
 			'northern911_address_all' => ['superadmin'],
-			'northern911_dashboard_view' => ['superadmin'],
 			'northern911_import' => ['superadmin'],
 			'northern911_export' => ['superadmin'],
 		] as $northern911_permission => $northern911_groups) {

@@ -115,7 +115,7 @@
 	e911_styles();
 
 	echo "<form method='post'>\n";
-	$back = permission_exists('northern911_dashboard_view') ? 'e911_dashboard.php' : 'e911_addresses.php';
+	$back = 'e911_addresses.php';
 	$buttons = e911_button($text['button-back'], $back, e911_icon('back', 'chevron-left'), ['id' => 'btn_back']);
 	if (e911_customer_number() !== '') {
 		$buttons .= button::create(['type' => 'submit', 'label' => $text['button-download_csv'], 'icon' => e911_icon('download', 'download'), 'id' => 'btn_save', 'style' => 'margin-left: 15px;']);

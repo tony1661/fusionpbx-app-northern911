@@ -54,7 +54,7 @@
 		$token = new token;
 		if (!$token->validate($_SERVER['PHP_SELF'])) {
 			message::add('Invalid token, please try again', 'negative');
-			header('Location: e911_addresses.php?domain_uuid='.urlencode($domain_uuid));
+			header('Location: e911_addresses.php');
 			exit;
 		}
 
@@ -91,7 +91,7 @@
 		if (empty($errors)) {
 			e911_save_record($domain_uuid, $data, $uuid);
 			message::add('Saved. Export it to the carrier to make the change live.');
-			header('Location: e911_addresses.php?domain_uuid='.urlencode($domain_uuid));
+			header('Location: e911_addresses.php');
 			exit;
 		}
 		$row = array_merge($row, $data);
@@ -122,7 +122,7 @@
 
 	echo "<form method='post' name='frm' id='frm'>\n";
 
-	$buttons = e911_button('Back', 'e911_addresses.php?domain_uuid='.urlencode($domain_uuid), 'chevron-left');
+	$buttons = e911_button('Back', 'e911_addresses.php', 'chevron-left');
 	$buttons .= button::create(['type' => 'submit', 'label' => 'Save', 'icon' => e911_icon('save', 'check'), 'id' => 'btn_save', 'style' => 'margin-left: 15px;']);
 	e911_action_bar($uuid ? 'Edit E911 Address' : 'Add E911 Address', $buttons);
 

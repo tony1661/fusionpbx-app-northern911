@@ -13,20 +13,29 @@ Keeps the Northern 911 address for every emergency number in each domain, audits
 3. In FusionPBX go to Advanced > Upgrade, tick App Defaults, Menu Defaults, Permission Defaults and Schema, then run it. From the shell you can run `cd /var/www/fusionpbx && php core/upgrade/upgrade.php` instead.
 4. Log out and back in so the new menu items and permissions load.
 
-You will find E911 and E911 Dashboard under Applications.
+You will find E911 under Applications.
 
 ## First run
 
 1. Set your customer number (see Customer number below).
 2. Open the Northern 911 sheet in Excel and save it as CSV.
-3. Go to E911 Dashboard > Import and upload it. Leave "already in the carrier database" ticked so these numbers are not flagged as waiting for export.
+3. Go to E911 > Import and upload it. Leave "already in the carrier database" ticked so these numbers are not flagged as waiting for export.
 4. On the review screen, check the domain picked for each customer. Numbers matched by name are marked "please check". Anything with no match is listed first and is skipped unless you pick a domain. Rows with a missing required field are marked "will be skipped" and are not imported. Fix them in the sheet and import again, or add them by hand.
 
-## Addresses
+## The E911 page
 
-Every field is required except Unit / Suite, 911 Instructions and Internal Notes. An address cannot be saved or imported with a required field missing.
+Everything is on one page, for the domain selected at the top right of FusionPBX:
 
-Domain admins see only their own domain. Superadmins can use Show All to list every domain's addresses, or open a domain from the dashboard.
+- Charts for extensions, addresses and issues
+- The E911 addresses, with + Add Address, Toggle and Delete
+- The extensions and whether each one is covered. Click an extension to open its settings.
+- The list of issues, filtered by severity
+
+Superadmins also get a Show All button. It shows the same page across every domain, with a Domains chart, a table of domains (worst first) and a Domain column on each list. Clicking a domain, address or extension switches FusionPBX to that domain and opens it, the same way the core list pages do. This needs a FusionPBX version that handles `domain_change=true` links and the `domain_select` permission.
+
+Domain admins see only their own domain.
+
+Every address field is required except Unit / Suite, 911 Instructions and Internal Notes. An address cannot be saved or imported with a required field missing.
 
 ## What the audit checks
 
@@ -54,7 +63,7 @@ To leave an extension out of the audit (fax, paging, door phones), put `no911` i
 
 ## Export
 
-E911 Dashboard > Export writes the Northern 911 file: 13 columns, no header row, CRLF line endings. By default it exports every address in every domain. You can pick one domain, or only the addresses that are new or changed since the last export. Disabled addresses are never exported, and any address with a missing field is left out and listed on the page. Exported addresses are marked as sent so the dashboard knows they have been uploaded.
+E911 > Export writes the Northern 911 file: 13 columns, no header row, CRLF line endings. By default it exports every address in every domain. You can pick one domain, or only the addresses that are new or changed since the last export. Disabled addresses are never exported, and any address with a missing field is left out and listed on the page. Exported addresses are marked as sent so the E911 page knows they have been uploaded.
 
 Columns in the export:
 
@@ -86,7 +95,7 @@ Deleting or disabling an address here does not remove it from Northern 911. Remo
 |---|---|
 | northern911_address_view, add, edit, delete | superadmin, admin |
 | northern911_address_all (see every domain) | superadmin |
-| northern911_dashboard_view, northern911_import, northern911_export | superadmin |
+| northern911_import, northern911_export | superadmin |
 
 ## Uninstall
 
