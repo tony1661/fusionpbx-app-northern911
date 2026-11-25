@@ -59,6 +59,7 @@ No test suite and no local runtime in the repo. Changes are verified on a Fusion
 - 2026: Dashboard (`e911_dashboard.php`) merged into the single `e911_addresses.php` page ("Making it all one page").
 - Added handling for disabled domains (audit flags + excluded from export).
 - README documents manual menu-item creation because Menu Defaults resets custom menus.
+- The exempt tag was only documented in README and the setting description, so users couldn't find it. Added a hint under the Extensions section of the E911 page (`description-exempt_hint`, shows the live tag via `e911_audit::$exempt_tag`).
 
 ## Keeping this file current (instruction to AI sessions)
 

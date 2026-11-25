@@ -58,6 +58,7 @@ $text['label-all_domains']['en-us'] = "All domains";
 
 //messages
 $text['message-no_addresses']['en-us'] = "No E911 addresses yet.";
+$text['description-exempt_hint']['en-us'] = "To leave an extension out of the audit (fax, paging, door phone), add \"{tag}\" to its description.";
 $text['message-no_enabled_extensions']['en-us'] = "No enabled extensions in this domain.";
 $text['message-all_compliant']['en-us'] = "Every domain is compliant.";
 $text['message-nothing_to_show']['en-us'] = "Nothing to show.";

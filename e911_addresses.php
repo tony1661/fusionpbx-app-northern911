@@ -522,6 +522,9 @@
 
 //extensions
 	e911_section($text['title-extensions'], '', count($extensions));
+	if ($audit->exempt_tag !== '') {
+		echo "<div class='e911-muted' style='margin: -5px 0 8px 0;'>".escape(str_replace('{tag}', $audit->exempt_tag, $text['description-exempt_hint']))."</div>\n";
+	}
 	echo "<div class='card'>\n";
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";

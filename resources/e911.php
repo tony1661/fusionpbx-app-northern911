@@ -361,6 +361,7 @@ if (!function_exists('e911_db')) {
 		public $record_usage = [];		//northern911_address_uuid => list of extensions using it
 		public $record_issues = [];		//northern911_address_uuid => list of issues
 		public $extension_status = [];	//extension_uuid => [severity, message]
+		public $exempt_tag = '';		//lower case text that exempts an extension, from Default Settings
 
 		private static $rank = ['ok' => 0, 'exempt' => 0, 'disabled' => 0, 'notice' => 1, 'warning' => 2, 'error' => 3];
 		private static $canada = ['AB','BC','MB','NB','NL','NS','NT','NU','ON','PE','QC','SK','YT'];
@@ -454,6 +455,7 @@ if (!function_exists('e911_db')) {
 		//run the audit, for one domain or for every enabled domain
 		public function run($only_domain_uuid = null) {
 			$exempt_tag = strtolower(trim((string)e911_setting('exempt_tag', 'no911')));
+			$this->exempt_tag = $exempt_tag;
 
 			//every record, so numbers registered in another domain can be found
 			$sql = "select *, cast(northern911_address_exported as text) as exported_text from v_northern911_addresses ";
