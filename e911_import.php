@@ -10,7 +10,7 @@
 	require_once __DIR__ . "/resources/e911.php";
 
 //check permissions
-	if (!permission_exists('e911_import')) {
+	if (!permission_exists('northern911_import')) {
 		echo "access denied";
 		exit;
 	}
@@ -54,16 +54,16 @@
 			}
 			$rows[] = [
 				'line' => $line,
-				'e911_address_number' => $number,
-				'e911_address_name' => $cols[3],
-				'e911_address_street_number' => $cols[5],
-				'e911_address_unit' => $cols[6],
-				'e911_address_street_name' => $cols[7],
-				'e911_address_city' => $cols[8],
-				'e911_address_province' => strtoupper($cols[9]),
-				'e911_address_postal_code' => strtoupper($cols[10]),
-				'e911_address_location_info' => $cols[11],
-				'e911_address_enabled' => 'true',
+				'northern911_address_number' => $number,
+				'northern911_address_name' => $cols[3],
+				'northern911_address_street_number' => $cols[5],
+				'northern911_address_unit' => $cols[6],
+				'northern911_address_street_name' => $cols[7],
+				'northern911_address_city' => $cols[8],
+				'northern911_address_province' => strtoupper($cols[9]),
+				'northern911_address_postal_code' => strtoupper($cols[10]),
+				'northern911_address_location_info' => $cols[11],
+				'northern911_address_enabled' => 'true',
 			];
 		}
 		fclose($handle);
@@ -78,8 +78,8 @@
 		}
 
 		$existing = [];
-		foreach (e911_select("select domain_uuid, e911_address_number from v_e911_addresses") as $row) {
-			$existing[e911_audit::normalize($row['e911_address_number'])] = $row['domain_uuid'];
+		foreach (e911_select("select domain_uuid, northern911_address_number from v_northern911_addresses") as $row) {
+			$existing[e911_audit::normalize($row['northern911_address_number'])] = $row['domain_uuid'];
 		}
 		$emergency = [];
 		$outbound = [];
@@ -103,7 +103,7 @@
 
 		//first pass, evidence from the phone number
 		foreach ($rows as $i => $row) {
-			$n = $row['e911_address_number'];
+			$n = $row['northern911_address_number'];
 			$rows[$i]['domain_uuid'] = '';
 			$rows[$i]['reason'] = '';
 			foreach ([[$existing, 'Already in E911 list'], [$emergency, 'Extension emergency caller ID'], [$inbound, 'Inbound destination'], [$outbound, 'Extension outbound caller ID']] as $source) {
@@ -119,14 +119,14 @@
 		$customer_domain = [];
 		foreach ($rows as $row) {
 			if ($row['domain_uuid'] !== '') {
-				$customer_domain[e911_alnum($row['e911_address_name'])][$row['domain_uuid']] = ($customer_domain[e911_alnum($row['e911_address_name'])][$row['domain_uuid']] ?? 0) + 1;
+				$customer_domain[e911_alnum($row['northern911_address_name'])][$row['domain_uuid']] = ($customer_domain[e911_alnum($row['northern911_address_name'])][$row['domain_uuid']] ?? 0) + 1;
 			}
 		}
 		foreach ($rows as $i => $row) {
 			if ($row['domain_uuid'] !== '') {
 				continue;
 			}
-			$key = e911_alnum($row['e911_address_name']);
+			$key = e911_alnum($row['northern911_address_name']);
 			if (!empty($customer_domain[$key])) {
 				arsort($customer_domain[$key]);
 				$rows[$i]['domain_uuid'] = array_key_first($customer_domain[$key]);
@@ -157,9 +157,9 @@
 		//group
 		$groups = [];
 		foreach ($rows as $i => $row) {
-			$key = md5(e911_alnum($row['e911_address_name']).'|'.$row['domain_uuid']);
+			$key = md5(e911_alnum($row['northern911_address_name']).'|'.$row['domain_uuid']);
 			if (!isset($groups[$key])) {
-				$groups[$key] = ['name' => $row['e911_address_name'], 'domain_uuid' => $row['domain_uuid'], 'reasons' => [], 'rows' => []];
+				$groups[$key] = ['name' => $row['northern911_address_name'], 'domain_uuid' => $row['domain_uuid'], 'reasons' => [], 'rows' => []];
 			}
 			$groups[$key]['rows'][] = $i;
 			if ($row['reason'] !== '') {
@@ -212,10 +212,11 @@
 		if (($_POST['action'] ?? '') == 'commit' && !empty($_SESSION['e911_import'])) {
 			$import = $_SESSION['e911_import'];
 			$existing = [];
-			foreach (e911_select("select e911_address_uuid, domain_uuid, e911_address_number from v_e911_addresses") as $row) {
-				$existing[$row['domain_uuid']][e911_audit::normalize($row['e911_address_number'])][] = $row['e911_address_uuid'];
+			foreach (e911_select("select northern911_address_uuid, domain_uuid, northern911_address_number from v_northern911_addresses") as $row) {
+				$existing[$row['domain_uuid']][e911_audit::normalize($row['northern911_address_number'])][] = $row['northern911_address_uuid'];
 			}
 			$added = 0;
+			$incomplete = 0;
 			$updated = 0;
 			$skipped = 0;
 			$saved = [];
@@ -227,7 +228,12 @@
 				}
 				foreach ($group['rows'] as $i) {
 					$row = $import['rows'][$i];
-					$n = $row['e911_address_number'];
+					//addresses with missing fields are never saved, fix them in the sheet or add them by hand
+					if (e911_audit::missing_fields($row)) {
+						$incomplete++;
+						continue;
+					}
+					$n = $row['northern911_address_number'];
 					$data = array_intersect_key($row, array_flip(e911_fields()));
 					if (!empty($existing[$domain_uuid][$n])) {
 						$uuid = array_shift($existing[$domain_uuid][$n]);
@@ -245,8 +251,8 @@
 				e911_mark_exported($saved);
 			}
 			unset($_SESSION['e911_import']);
-			message::add('Import finished: '.$added.' added, '.$updated.' updated, '.$skipped.' skipped.');
-			header('Location: '.(permission_exists('e911_dashboard_view') ? 'e911_dashboard.php' : 'e911_addresses.php'));
+			message::add('Import finished: '.$added.' added, '.$updated.' updated, '.$skipped.' skipped'.($incomplete ? ', '.$incomplete.' left out because of missing fields' : '').'.', $incomplete ? 'alert' : 'positive');
+			header('Location: '.(permission_exists('northern911_dashboard_view') ? 'e911_dashboard.php' : 'e911_addresses.php'));
 			exit;
 		}
 	}
@@ -262,8 +268,8 @@
 
 	if ($step == 'upload') {
 		echo "<form method='post' enctype='multipart/form-data'>\n";
-		$buttons = e911_button('Back', permission_exists('e911_dashboard_view') ? 'e911_dashboard.php' : 'e911_addresses.php', 'chevron-left');
-		$buttons .= "<button type='submit' class='btn btn-default'><span class='fas fa-upload fa-fw'></span> Upload</button>\n";
+		$buttons = e911_button('Back', permission_exists('northern911_dashboard_view') ? 'e911_dashboard.php' : 'e911_addresses.php', 'chevron-left');
+		$buttons .= button::create(['type' => 'submit', 'label' => 'Upload', 'icon' => e911_icon('upload', 'upload'), 'id' => 'btn_save', 'style' => 'margin-left: 15px;']);
 		e911_action_bar('E911 Import', $buttons);
 		e911_customer_number_banner();
 
@@ -292,7 +298,7 @@
 
 		echo "<form method='post'>\n";
 		$buttons = e911_button('Cancel', 'e911_import.php', 'times');
-		$buttons .= "<button type='submit' class='btn btn-default'><span class='fas fa-check fa-fw'></span> Import</button>\n";
+		$buttons .= button::create(['type' => 'submit', 'label' => 'Import', 'icon' => e911_icon('save', 'check'), 'id' => 'btn_save', 'style' => 'margin-left: 15px;']);
 		e911_action_bar('E911 Import: Review', $buttons);
 
 		echo "<p>".count($import['rows'])." numbers in ".count($import['groups'])." groups. ";
@@ -317,9 +323,9 @@
 			foreach ($group['rows'] as $i) {
 				$row = $import['rows'][$i];
 				$missing = e911_audit::missing_fields($row);
-				echo escape(e911_format_number($row['e911_address_number'])).": ".escape(e911_format_address($row));
+				echo escape(e911_format_number($row['northern911_address_number'])).": ".escape(e911_format_address($row));
 				if ($missing) {
-					echo " ".e911_badge('error', 'Missing '.implode(', ', $missing));
+					echo " ".e911_badge('error', 'Missing '.implode(', ', $missing).', will be skipped');
 				}
 				echo "<br>";
 			}

@@ -27,10 +27,10 @@ if (!function_exists('e911_db')) {
 		return e911_db()->execute($sql, $parameters);
 	}
 
-	//settings stored under Default Settings, category e911
+	//settings stored under Default Settings, category northern911
 	function e911_setting($subcategory, $default) {
 		$sql = "select default_setting_value from v_default_settings ";
-		$sql .= "where default_setting_category = 'e911' and default_setting_subcategory = :subcategory ";
+		$sql .= "where default_setting_category = 'northern911' and default_setting_subcategory = :subcategory ";
 		$sql .= "and cast(default_setting_enabled as text) = 'true' limit 1";
 		$value = e911_select($sql, ['subcategory' => $subcategory], 'column');
 		return ($value === false || $value === null || $value === '') ? $default : $value;
@@ -45,9 +45,9 @@ if (!function_exists('e911_db')) {
 	//record fields, in the order of the carrier file where it applies
 	function e911_fields() {
 		return [
-			'e911_address_number', 'e911_address_name', 'e911_address_street_number', 'e911_address_unit',
-			'e911_address_street_name', 'e911_address_city', 'e911_address_province', 'e911_address_postal_code',
-			'e911_address_location_info', 'e911_address_enabled', 'e911_address_description',
+			'northern911_address_number', 'northern911_address_name', 'northern911_address_street_number', 'northern911_address_unit',
+			'northern911_address_street_name', 'northern911_address_city', 'northern911_address_province', 'northern911_address_postal_code',
+			'northern911_address_location_info', 'northern911_address_enabled', 'northern911_address_description',
 		];
 	}
 
@@ -68,18 +68,18 @@ if (!function_exists('e911_db')) {
 			foreach (array_keys($parameters) as $field) {
 				$sets[] = $field." = :".$field;
 			}
-			$sql = "update v_e911_addresses set ".implode(', ', $sets).", update_date = now(), update_user = :update_user ";
-			$sql .= "where e911_address_uuid = :e911_address_uuid";
+			$sql = "update v_northern911_addresses set ".implode(', ', $sets).", update_date = now(), update_user = :update_user ";
+			$sql .= "where northern911_address_uuid = :northern911_address_uuid";
 			$parameters['update_user'] = $user_uuid;
-			$parameters['e911_address_uuid'] = $uuid;
+			$parameters['northern911_address_uuid'] = $uuid;
 			e911_execute($sql, $parameters);
 			return $uuid;
 		}
 
 		$uuid = uuid();
-		$parameters['e911_address_uuid'] = $uuid;
+		$parameters['northern911_address_uuid'] = $uuid;
 		$columns = array_keys($parameters);
-		$sql = "insert into v_e911_addresses (".implode(', ', $columns).", insert_date, insert_user) ";
+		$sql = "insert into v_northern911_addresses (".implode(', ', $columns).", insert_date, insert_user) ";
 		$sql .= "values (:".implode(', :', $columns).", now(), :insert_user)";
 		$parameters['insert_user'] = $user_uuid;
 		e911_execute($sql, $parameters);
@@ -89,7 +89,7 @@ if (!function_exists('e911_db')) {
 	function e911_mark_exported($uuids) {
 		foreach ($uuids as $uuid) {
 			if (is_uuid($uuid)) {
-				e911_execute("update v_e911_addresses set e911_address_exported = now() where e911_address_uuid = :uuid", ['uuid' => $uuid]);
+				e911_execute("update v_northern911_addresses set northern911_address_exported = now() where northern911_address_uuid = :uuid", ['uuid' => $uuid]);
 			}
 		}
 	}
@@ -104,16 +104,16 @@ if (!function_exists('e911_db')) {
 		return [
 			$customer_number,
 			'A',
-			e911_audit::normalize($row['e911_address_number']),
-			$row['e911_address_name'],
+			e911_audit::normalize($row['northern911_address_number']),
+			$row['northern911_address_name'],
 			'',
-			$row['e911_address_street_number'],
-			$row['e911_address_unit'],
-			$row['e911_address_street_name'],
-			$row['e911_address_city'],
-			$row['e911_address_province'],
-			$row['e911_address_postal_code'],
-			$row['e911_address_location_info'],
+			$row['northern911_address_street_number'],
+			$row['northern911_address_unit'],
+			$row['northern911_address_street_name'],
+			$row['northern911_address_city'],
+			$row['northern911_address_province'],
+			$row['northern911_address_postal_code'],
+			$row['northern911_address_location_info'],
 			'N',
 		];
 	}
@@ -124,14 +124,65 @@ if (!function_exists('e911_db')) {
 			return;
 		}
 		echo "<div style='background: #fdecea; border: 1px solid #c0392b; color: #922b21; border-radius: 6px; padding: 12px 15px; margin: 0 0 15px 0;'>\n";
-		echo "<b>E911 customer number is not set.</b> Exports are blocked until it is. ";
+		echo "<b>Northern 911 customer number is not set.</b> Exports are blocked until it is. ";
 		if (permission_exists('default_setting_view')) {
-			echo "Go to <a href='/core/default_settings/default_settings.php?search=e911'>Advanced &gt; Default Settings</a>, find category <b>e911</b>, subcategory <b>account_id</b>, enter your carrier customer number and enable it.";
+			echo "Go to <a href='".PROJECT_PATH."/core/default_settings/default_settings.php?search=northern911'>Advanced &gt; Default Settings</a>, find category <b>northern911</b>, subcategory <b>account_id</b>, enter your carrier customer number and enable it.";
 		}
 		else {
-			echo "Ask your administrator to set it under Default Settings, category e911, subcategory account_id.";
+			echo "Ask your administrator to set it under Default Settings, category northern911, subcategory account_id.";
 		}
 		echo "\n</div>\n";
+	}
+
+	//theme setting, works with the settings object (current FusionPBX) and the session array (older 5.x)
+	function e911_theme($subcategory, $default = null) {
+		global $settings;
+		$value = null;
+		if (isset($settings) && is_object($settings) && method_exists($settings, 'get')) {
+			$value = $settings->get('theme', $subcategory, $default);
+		}
+		elseif (isset($_SESSION['theme'][$subcategory])) {
+			$value = $_SESSION['theme'][$subcategory];
+			if (is_array($value)) {
+				$value = $value['text'] ?? $value['boolean'] ?? reset($value);
+			}
+		}
+		return ($value === null || $value === '') ? $default : $value;
+	}
+
+	function e911_theme_bool($subcategory) {
+		$value = e911_theme($subcategory, false);
+		return $value === true || $value === 'true';
+	}
+
+	//theme button icon, for example e911_icon('add', 'plus') reads theme > button_icon_add
+	function e911_icon($name, $default) {
+		return e911_theme('button_icon_'.$name, $default);
+	}
+
+	//language strings from app_languages.php plus the core globals, with English fallbacks for older versions
+	function e911_text() {
+		$language = new text;
+		$text = $language->get();
+		$text = is_array($text) ? $text : [];
+		$fallback = [
+			'button-add' => 'Add', 'button-back' => 'Back', 'button-cancel' => 'Cancel', 'button-continue' => 'Continue',
+			'button-delete' => 'Delete', 'button-edit' => 'Edit', 'button-export' => 'Export', 'button-import' => 'Import',
+			'button-save' => 'Save', 'button-search' => 'Search', 'button-show_all' => 'Show All', 'button-toggle' => 'Toggle',
+			'button-download_csv' => 'Download CSV', 'label-search' => 'Search...', 'label-domain' => 'Domain',
+			'label-enabled' => 'Enabled', 'label-true' => 'True', 'label-false' => 'False', 'label-none' => 'None', 'label-all' => 'All',
+		];
+		foreach ($fallback as $key => $value) {
+			if (empty($text[$key])) {
+				$text[$key] = $value;
+			}
+		}
+		return $text;
+	}
+
+	//standard FusionPBX link button
+	function e911_button($label, $url, $icon, $options = []) {
+		return button::create(array_merge(['type' => 'button', 'label' => $label, 'icon' => $icon, 'link' => $url], $options));
 	}
 
 	//one csv line, quoting only when needed (same as Excel), ending in CRLF
@@ -153,49 +204,86 @@ if (!function_exists('e911_db')) {
 	}
 
 	function e911_format_address($row) {
-		$unit = trim((string)($row['e911_address_unit'] ?? ''));
-		$line = trim(($row['e911_address_street_number'] ?? '').' '.($row['e911_address_street_name'] ?? ''));
+		$unit = trim((string)($row['northern911_address_unit'] ?? ''));
+		$line = trim(($row['northern911_address_street_number'] ?? '').' '.($row['northern911_address_street_name'] ?? ''));
 		if ($unit !== '' && strtoupper($unit) !== 'N/A') {
 			$line .= ', '.(preg_match('/^\d/', $unit) ? 'Unit '.$unit : $unit);
 		}
-		$city = trim(($row['e911_address_city'] ?? '').' '.($row['e911_address_province'] ?? '').' '.($row['e911_address_postal_code'] ?? ''));
+		$city = trim(($row['northern911_address_city'] ?? '').' '.($row['northern911_address_province'] ?? '').' '.($row['northern911_address_postal_code'] ?? ''));
 		return trim($line.', '.$city, ', ');
 	}
 
+	//severity colours and icons, also used by the dashboard charts
+	function e911_colors() {
+		return ['error' => '#c0392b', 'warning' => '#d68910', 'notice' => '#5d6d7e', 'ok' => '#1e8449', 'exempt' => '#95a5a6', 'disabled' => '#95a5a6', 'empty' => '#95a5a6'];
+	}
+
+	//status as an icon and coloured text, the way FusionPBX shows states
 	function e911_badge($severity, $text = null) {
 		$labels = ['error' => 'Error', 'warning' => 'Warning', 'notice' => 'Notice', 'ok' => 'OK', 'exempt' => 'Exempt', 'disabled' => 'Disabled'];
+		$icons = ['error' => 'exclamation-circle', 'warning' => 'exclamation-triangle', 'notice' => 'info-circle', 'ok' => 'check-circle', 'exempt' => 'minus-circle', 'disabled' => 'ban'];
 		$text = $text ?? ($labels[$severity] ?? $severity);
-		return "<span class='e911-badge e911-".escape($severity)."'>".escape($text)."</span>";
+		$icon = $icons[$severity] ?? 'circle';
+		return "<span class='e911-status e911-".escape($severity)."'><span class='fas fa-".$icon." fa-fw'></span> ".escape($text)."</span>";
 	}
 
-	function e911_button($label, $url, $icon = null) {
-		$html = "<button type='button' class='btn btn-default' onclick=\"window.location.href='".escape($url)."';\">";
-		if ($icon) {
-			$html .= "<span class='fas fa-".escape($icon)." fa-fw'></span> ";
+	//worst issue as text, every issue in the tooltip
+	function e911_issue_summary($issues, $prefix = '') {
+		if (empty($issues)) {
+			return e911_badge('ok');
 		}
-		return $html.escape($label)."</button>\n";
+		$worst = e911_audit::worst($issues);
+		$first = null;
+		$all = [];
+		foreach ($issues as $issue) {
+			$text = $prefix !== '' ? preg_replace('/^'.preg_quote($prefix, '/').'(:)? ?/', '', $issue['message']) : $issue['message'];
+			$text = ucfirst($text);
+			$all[] = ucfirst($issue['severity']).': '.$text;
+			if ($first === null && $issue['severity'] == $worst) {
+				$first = $text;
+			}
+		}
+		$html = "<span title=\"".escape(implode("\n", $all))."\">".e911_badge($worst, $first);
+		if (count($issues) > 1) {
+			$html .= " <span class='e911-muted'>+".(count($issues) - 1)." more</span>";
+		}
+		return $html."</span>";
 	}
 
-	function e911_action_bar($heading, $buttons = '') {
+	function e911_action_bar($heading, $buttons = '', $count = null) {
 		echo "<div class='action_bar' id='action_bar'>\n";
-		echo "	<div class='heading'><b>".escape($heading)."</b></div>\n";
+		echo "	<div class='heading'><b>".escape($heading)."</b>".($count !== null ? "<div class='count'>".number_format($count)."</div>" : '')."</div>\n";
 		echo "	<div class='actions'>\n".$buttons."	</div>\n";
 		echo "	<div style='clear: both;'></div>\n";
 		echo "</div>\n";
 	}
 
+	//section heading inside a page, with optional buttons on the right
+	function e911_section($heading, $buttons = '', $count = null) {
+		echo "<div class='e911-section'>\n";
+		echo "	<div class='e911-section-heading'><b>".escape($heading)."</b>".($count !== null ? " <span class='e911-muted'>(".number_format($count).")</span>" : '')."</div>\n";
+		echo "	<div class='e911-section-actions'>".$buttons."</div>\n";
+		echo "</div>\n";
+	}
+
 	function e911_styles() {
 		echo "<style>\n";
-		echo ".e911-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; color: #fff; white-space: nowrap; }\n";
-		echo ".e911-error { background: #c0392b; } .e911-warning { background: #d68910; } .e911-notice { background: #5d6d7e; }\n";
-		echo ".e911-ok { background: #1e8449; } .e911-exempt, .e911-disabled { background: #95a5a6; }\n";
-		echo ".e911-cards { display: flex; flex-wrap: wrap; gap: 12px; margin: 5px 0 20px 0; }\n";
-		echo ".e911-card { flex: 1 1 140px; border: 1px solid rgba(0,0,0,0.12); border-radius: 6px; padding: 12px 15px; }\n";
-		echo ".e911-card .e911-num { font-size: 26px; font-weight: 700; line-height: 1.2; }\n";
-		echo ".e911-card .e911-lbl { font-size: 12px; opacity: 0.75; }\n";
-		echo ".e911-msgs { margin: 0; padding-left: 0; list-style: none; } .e911-msgs li { margin: 2px 0; }\n";
-		echo ".e911-section { margin: 25px 0 8px 0; font-weight: 700; font-size: 14px; }\n";
+		foreach (e911_colors() as $severity => $color) {
+			echo ".e911-".$severity." { color: ".$color."; }\n";
+		}
+		echo ".e911-status { font-weight: 600; }\n";
+		echo ".e911-status b, .e911-error b, .e911-warning b, .e911-notice b, .e911-ok b, .e911-exempt b, .e911-disabled b, .e911-summary b { color: inherit; }\n";
+		echo "td.e911-col-address { min-width: 220px; }\n";
+		echo "td.e911-col-status { min-width: 240px; max-width: 420px; }\n";
 		echo ".e911-muted { opacity: 0.55; }\n";
+		echo ".e911-section { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: 25px 0 10px 0; }\n";
+		echo ".e911-section-heading { font-size: 14px; }\n";
+		echo ".e911-summary { margin: 0 0 5px 0; }\n";
+		echo ".e911-summary > span { margin-right: 18px; white-space: nowrap; }\n";
+		echo ".e911-widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 15px; margin: 0 0 10px 0; }\n";
+		echo ".e911-widgets div.hud_chart { height: 150px; padding-top: 7px; }\n";
+		echo ".e911-widgets .e911-legend { padding: 8px 10px 12px 10px; font-size: 12px; line-height: 1.7; }\n";
+		echo ".e911-widgets .e911-legend span { margin: 0 6px; white-space: nowrap; }\n";
 		echo "</style>\n";
 	}
 
@@ -203,12 +291,12 @@ if (!function_exists('e911_db')) {
 	class e911_audit {
 
 		public $domains = [];			//domain_uuid => domain row
-		public $records = [];			//e911_address_uuid => record row (all domains)
+		public $records = [];			//northern911_address_uuid => record row (all domains)
 		public $extensions = [];		//extension_uuid => extension row (domains in scope)
 		public $issues = [];			//list of issues
 		public $summary = [];			//domain_uuid => counts and status
-		public $record_usage = [];		//e911_address_uuid => list of extensions using it
-		public $record_issues = [];		//e911_address_uuid => list of issues
+		public $record_usage = [];		//northern911_address_uuid => list of extensions using it
+		public $record_issues = [];		//northern911_address_uuid => list of issues
 		public $extension_status = [];	//extension_uuid => [severity, message]
 
 		private static $rank = ['ok' => 0, 'exempt' => 0, 'disabled' => 0, 'notice' => 1, 'warning' => 2, 'error' => 3];
@@ -228,12 +316,12 @@ if (!function_exists('e911_db')) {
 
 		public static function missing_fields($row) {
 			$required = [
-				'e911_address_name' => 'name',
-				'e911_address_street_number' => 'street number',
-				'e911_address_street_name' => 'street name',
-				'e911_address_city' => 'city',
-				'e911_address_province' => 'province',
-				'e911_address_postal_code' => 'postal code',
+				'northern911_address_name' => 'name',
+				'northern911_address_street_number' => 'street number',
+				'northern911_address_street_name' => 'street name',
+				'northern911_address_city' => 'city',
+				'northern911_address_province' => 'province',
+				'northern911_address_postal_code' => 'postal code',
 			];
 			$missing = [];
 			foreach ($required as $field => $label) {
@@ -317,14 +405,14 @@ if (!function_exists('e911_db')) {
 			}
 
 			//every record, so numbers registered in another domain can be found
-			$sql = "select *, cast(e911_address_exported as text) as exported_text from v_e911_addresses ";
-			$sql .= "order by e911_address_name asc, e911_address_number asc";
+			$sql = "select *, cast(northern911_address_exported as text) as exported_text from v_northern911_addresses ";
+			$sql .= "order by northern911_address_name asc, northern911_address_number asc";
 			$by_number = [];
 			$by_domain_number = [];
 			foreach (e911_select($sql) as $row) {
-				$uuid = $row['e911_address_uuid'];
-				$row['number'] = self::normalize($row['e911_address_number']);
-				$row['enabled'] = ($row['e911_address_enabled'] !== 'false');
+				$uuid = $row['northern911_address_uuid'];
+				$row['number'] = self::normalize($row['northern911_address_number']);
+				$row['enabled'] = ($row['northern911_address_enabled'] !== 'false');
 				$this->records[$uuid] = $row;
 				$this->record_usage[$uuid] = [];
 				$this->record_issues[$uuid] = [];
@@ -442,7 +530,7 @@ if (!function_exists('e911_db')) {
 				if ($missing) {
 					$this->add_issue($domain_uuid, 'error', 'rec_incomplete', 'record', $uuid, $label, $number, $label.' is missing: '.implode(', ', $missing));
 				}
-				$postal = self::postal_problem($row['e911_address_province'], $row['e911_address_postal_code']);
+				$postal = self::postal_problem($row['northern911_address_province'], $row['northern911_address_postal_code']);
 				if ($postal) {
 					$this->add_issue($domain_uuid, $postal[0], 'rec_postal', 'record', $uuid, $label, $number, $label.': '.$postal[1]);
 				}

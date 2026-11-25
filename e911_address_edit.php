@@ -13,7 +13,7 @@
 	$uuid = (!empty($_REQUEST['id']) && is_uuid($_REQUEST['id'])) ? $_REQUEST['id'] : null;
 	$row = [];
 	if ($uuid) {
-		$sql = "select *, cast(e911_address_exported as text) as exported_text from v_e911_addresses where e911_address_uuid = :uuid";
+		$sql = "select *, cast(northern911_address_exported as text) as exported_text from v_northern911_addresses where northern911_address_uuid = :uuid";
 		$row = e911_select($sql, ['uuid' => $uuid], 'row');
 		if (!is_array($row) || empty($row)) {
 			message::add('Address not found', 'negative');
@@ -23,13 +23,13 @@
 	}
 
 //check permissions
-	if (($uuid && !permission_exists('e911_address_edit')) || (!$uuid && !permission_exists('e911_address_add'))) {
+	if (($uuid && !permission_exists('northern911_address_edit')) || (!$uuid && !permission_exists('northern911_address_add'))) {
 		echo "access denied";
 		exit;
 	}
 
 //work out the domain
-	$can_all = permission_exists('e911_address_all');
+	$can_all = permission_exists('northern911_address_all');
 	if ($uuid) {
 		$domain_uuid = $row['domain_uuid'];
 		if (!$can_all && $domain_uuid != $_SESSION['domain_uuid']) {
@@ -43,8 +43,8 @@
 			$domain_uuid = $_REQUEST['domain_uuid'];
 		}
 		$row = [
-			'e911_address_number' => e911_audit::normalize($_GET['number'] ?? ''),
-			'e911_address_enabled' => 'true',
+			'northern911_address_number' => e911_audit::normalize($_GET['number'] ?? ''),
+			'northern911_address_enabled' => 'true',
 		];
 	}
 
@@ -66,20 +66,20 @@
 		foreach (e911_fields() as $field) {
 			$data[$field] = trim((string)($_POST[$field] ?? ''));
 		}
-		$data['e911_address_number'] = e911_audit::normalize($data['e911_address_number']);
-		$data['e911_address_province'] = strtoupper($data['e911_address_province']);
-		$data['e911_address_postal_code'] = strtoupper($data['e911_address_postal_code']);
-		$data['e911_address_enabled'] = ($_POST['e911_address_enabled'] ?? '') === 'true' ? 'true' : 'false';
+		$data['northern911_address_number'] = e911_audit::normalize($data['northern911_address_number']);
+		$data['northern911_address_province'] = strtoupper($data['northern911_address_province']);
+		$data['northern911_address_postal_code'] = strtoupper($data['northern911_address_postal_code']);
+		$data['northern911_address_enabled'] = ($_POST['northern911_address_enabled'] ?? '') === 'true' ? 'true' : 'false';
 
-		if (!e911_audit::valid_number($data['e911_address_number'])) {
+		if (!e911_audit::valid_number($data['northern911_address_number'])) {
 			$errors[] = 'Enter a valid 10 digit phone number.';
 		}
 		else {
-			$sql = "select e911_address_uuid, domain_uuid from v_e911_addresses where e911_address_number = :number";
-			foreach (e911_select($sql, ['number' => $data['e911_address_number']]) as $existing) {
-				if ($existing['e911_address_uuid'] != $uuid) {
+			$sql = "select northern911_address_uuid, domain_uuid from v_northern911_addresses where northern911_address_number = :number";
+			foreach (e911_select($sql, ['number' => $data['northern911_address_number']]) as $existing) {
+				if ($existing['northern911_address_uuid'] != $uuid) {
 					$where = e911_select("select domain_name from v_domains where domain_uuid = :d", ['d' => $existing['domain_uuid']], 'column');
-					$errors[] = e911_format_number($data['e911_address_number']).' already has an E911 address in '.($where ?: 'another domain').'. A number can only have one 911 address, edit that record instead.';
+					$errors[] = e911_format_number($data['northern911_address_number']).' already has an E911 address in '.($where ?: 'another domain').'. A number can only have one 911 address, edit that record instead.';
 					break;
 				}
 			}
@@ -99,7 +99,7 @@
 
 //extensions using this number
 	$using = [];
-	$number = e911_audit::normalize($row['e911_address_number'] ?? '');
+	$number = e911_audit::normalize($row['northern911_address_number'] ?? '');
 	if ($number !== '') {
 		$sql = "select extension, effective_caller_id_name, emergency_caller_id_number from v_extensions ";
 		$sql .= "where domain_uuid = :domain_uuid and cast(enabled as text) = 'true'";
@@ -123,7 +123,7 @@
 	echo "<form method='post' name='frm' id='frm'>\n";
 
 	$buttons = e911_button('Back', 'e911_addresses.php?domain_uuid='.urlencode($domain_uuid), 'chevron-left');
-	$buttons .= "<button type='submit' class='btn btn-default'><span class='fas fa-check fa-fw'></span> Save</button>\n";
+	$buttons .= button::create(['type' => 'submit', 'label' => 'Save', 'icon' => e911_icon('save', 'check'), 'id' => 'btn_save', 'style' => 'margin-left: 15px;']);
 	e911_action_bar($uuid ? 'Edit E911 Address' : 'Add E911 Address', $buttons);
 
 	if ($errors) {
@@ -139,7 +139,8 @@
 	};
 	$input = function ($label, $field, $help = '', $extra = '') use ($value) {
 		echo "<tr>\n";
-		echo "	<td class='vncell' width='30%' valign='top' align='left' nowrap='nowrap'>".escape($label)."</td>\n";
+		$label_class = strpos($extra, 'required') !== false ? 'vncellreq' : 'vncell';
+		echo "	<td class='".$label_class."' width='30%' valign='top' align='left' nowrap='nowrap'>".escape($label)."</td>\n";
 		echo "	<td class='vtable' width='70%' align='left'>\n";
 		echo "		<input class='formfld' type='text' name='".$field."' maxlength='255' value='".$value($field)."' ".$extra.">\n";
 		if ($help !== '') {
@@ -154,7 +155,7 @@
 
 	if ($can_all) {
 		echo "<tr>\n";
-		echo "	<td class='vncell' width='30%' valign='top' align='left' nowrap='nowrap'>Domain</td>\n";
+		echo "	<td class='vncellreq' width='30%' valign='top' align='left' nowrap='nowrap'>Domain</td>\n";
 		echo "	<td class='vtable' width='70%' align='left'>\n";
 		echo "		<select class='formfld' name='domain_uuid'>\n";
 		foreach (e911_domains() as $domain) {
@@ -166,14 +167,14 @@
 		echo "</tr>\n";
 	}
 
-	$input('Phone Number', 'e911_address_number', '10 digits. This must match the Emergency Caller ID Number on the extensions at this location.', "required='required'");
-	$input('Name', 'e911_address_name', 'The name the 911 operator will see.', "required='required'");
-	$input('Street Number', 'e911_address_street_number', '', "required='required'");
-	$input('Unit / Suite', 'e911_address_unit', 'Leave blank or N/A if there is none.');
-	$input('Street Name', 'e911_address_street_name', 'Include the suffix and direction, for example Queen St W.', "required='required'");
-	$input('City', 'e911_address_city', '', "required='required'");
-	$input('Province / State', 'e911_address_province', 'Two letter code, for example ON.', "required='required' list='e911_provinces' style='width: 80px;'");
-	$input('Postal Code', 'e911_address_postal_code', 'Format A1A 1A1.', "required='required' style='width: 120px;'");
+	$input('Phone Number', 'northern911_address_number', '10 digits. This must match the Emergency Caller ID Number on the extensions at this location.', "required='required'");
+	$input('Name', 'northern911_address_name', 'The name the 911 operator will see.', "required='required'");
+	$input('Street Number', 'northern911_address_street_number', '', "required='required'");
+	$input('Unit / Suite', 'northern911_address_unit', 'Leave blank or N/A if there is none.');
+	$input('Street Name', 'northern911_address_street_name', 'Include the suffix and direction, for example Queen St W.', "required='required'");
+	$input('City', 'northern911_address_city', '', "required='required'");
+	$input('Province / State', 'northern911_address_province', 'Two letter code, for example ON.', "required='required' list='e911_provinces' style='width: 80px;'");
+	$input('Postal Code', 'northern911_address_postal_code', 'Format A1A 1A1.', "required='required' style='width: 120px;'");
 
 	echo "<datalist id='e911_provinces'>";
 	foreach (['AB','BC','MB','NB','NL','NS','NT','NU','ON','PE','QC','SK','YT'] as $code) {
@@ -184,24 +185,24 @@
 	echo "<tr>\n";
 	echo "	<td class='vncell' valign='top' align='left' nowrap='nowrap'>911 Instructions</td>\n";
 	echo "	<td class='vtable' align='left'>\n";
-	echo "		<textarea class='formfld' name='e911_address_location_info' rows='3' style='width: 100%; max-width: 500px;'>".$value('e911_address_location_info')."</textarea>\n";
+	echo "		<textarea class='formfld' name='northern911_address_location_info' rows='3' style='width: 100%; max-width: 500px;'>".$value('northern911_address_location_info')."</textarea>\n";
 	echo "		<br>Instructions for the 911 operator, for example which entrance or floor to use.\n";
 	echo "	</td>\n";
 	echo "</tr>\n";
 
 
 	echo "<tr>\n";
-	echo "	<td class='vncell' valign='top' align='left' nowrap='nowrap'>Enabled</td>\n";
+	echo "	<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>Enabled</td>\n";
 	echo "	<td class='vtable' align='left'>\n";
-	echo "		<select class='formfld' name='e911_address_enabled'>\n";
-	echo "			<option value='true'".(($row['e911_address_enabled'] ?? 'true') !== 'false' ? " selected='selected'" : '').">True</option>\n";
-	echo "			<option value='false'".(($row['e911_address_enabled'] ?? '') === 'false' ? " selected='selected'" : '').">False</option>\n";
+	echo "		<select class='formfld' name='northern911_address_enabled'>\n";
+	echo "			<option value='true'".(($row['northern911_address_enabled'] ?? 'true') !== 'false' ? " selected='selected'" : '').">True</option>\n";
+	echo "			<option value='false'".(($row['northern911_address_enabled'] ?? '') === 'false' ? " selected='selected'" : '').">False</option>\n";
 	echo "		</select>\n";
 	echo "		<br>Disabled addresses are kept for reference but not audited or exported.\n";
 	echo "	</td>\n";
 	echo "</tr>\n";
 
-	$input('Internal Notes', 'e911_address_description', 'Not sent to the carrier.');
+	$input('Internal Notes', 'northern911_address_description', 'Not sent to the carrier.');
 
 	if ($uuid) {
 		echo "<tr>\n";
